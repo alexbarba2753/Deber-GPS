@@ -25,6 +25,9 @@ import {
   checkmarkCircleOutline,
   peopleOutline
 } from 'ionicons/icons';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 
 @Component({
   selector: 'app-home',
@@ -69,48 +72,95 @@ export class HomePage {
     });
   }
 
-  // Abrir enlace en nueva pestaña
+  // Abrir enlace en Google Maps o navegador externo
   abrirEnlace(url: string) {
-    window.open(url, '_blank');
+    if (Capacitor.isNativePlatform()) {
+      window.open(url, '_system');
+    } else {
+      window.open(url, '_blank');
+    }
   }
 
   // 3.- Guardar ubicación en archivo txt
   async guardarUbicacionTxt() {
     const contenido = `UBICACIÓN GPS:\n${this.urlUbicacion}\n\nEstudiantes:\n- Mateo Barba\n- Daniel Diaz\nFecha: ${new Date().toLocaleString()}`;
-    this.descargarArchivoTxt('ubicacion.txt', contenido);
+    await this.descargarArchivoTxt('ubicacion.txt', contenido);
     this.mensajeEstado = 'Se guardó correctamente: ubicacion.txt';
-
-    const alert = await this.alertController.create({
-      header: '¡Archivo Guardado!',
-      subHeader: 'ubicacion.txt',
-      message: 'Se descargó el archivo con la URL de la ubicación GPS.',
-      buttons: ['Aceptar']
-    });
-    await alert.present();
   }
 
   // 4.- Guardar ruta en archivo txt
   async guardarRutaTxt() {
     const contenido = `RUTA DE INTERÉS:\n${this.urlRuta}\n\nEstudiantes:\n- Mateo Barba\n- Daniel Diaz\nFecha: ${new Date().toLocaleString()}`;
-    this.descargarArchivoTxt('ruta.txt', contenido);
+    await this.descargarArchivoTxt('ruta.txt', contenido);
     this.mensajeEstado = 'Se guardó correctamente: ruta.txt';
-
-    const alert = await this.alertController.create({
-      header: '¡Archivo Guardado!',
-      subHeader: 'ruta.txt',
-      message: 'Se descargó el archivo con la URL de la ruta.',
-      buttons: ['Aceptar']
-    });
-    await alert.present();
   }
 
-  // Método simple para descargar el archivo de texto en el navegador/dispositivo
-  private descargarArchivoTxt(nombreArchivo: string, contenido: string) {
-    const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
-    const enlace = document.createElement('a');
-    enlace.href = window.URL.createObjectURL(blob);
-    enlace.download = nombreArchivo;
-    enlace.click();
-    window.URL.revokeObjectURL(enlace.href);
+  // Método compatible con Navegador Web (PC) y Android APK
+  private async descargarArchivoTxt(nombreArchivo: string, contenido: string) {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        // En Android (APK nativa), escribimos el archivo en el sistema de archivos del dispositivo
+        const resultado = await Filesystem.writeFile({
+          path: nombreArchivo,
+          data: contenido,
+          directory: Directory.Documents,
+          encoding: Encoding.UTF8
+        });
+
+        console.log('Archivo guardado en:', resultado.uri);
+
+        const alert = await this.alertController.create({
+          header: '¡Archivo Guardado!',
+          subHeader: nombreArchivo,
+          message: 'El archivo se guardó en el almacenamiento del dispositivo.\n\n¿Deseas guardarlo en Descargas o compartirlo?',
+          buttons: [
+            {
+              text: 'Solo Guardar',
+              role: 'cancel'
+            },
+            {
+              text: 'Guardar en Descargas / Compartir',
+              handler: async () => {
+                try {
+                  await Share.share({
+                    title: nombreArchivo,
+                    text: contenido,
+                    url: resultado.uri,
+                    dialogTitle: `Guardar ${nombreArchivo} en Descargas`
+                  });
+                } catch (shareErr) {
+                  console.log('Acción cancelada o error al compartir:', shareErr);
+                }
+              }
+            }
+          ]
+        });
+        await alert.present();
+      } catch (err: any) {
+        console.error('Error al guardar en nativo:', err);
+        const errorAlert = await this.alertController.create({
+          header: 'Error al Guardar',
+          message: 'No se pudo guardar el archivo en el dispositivo: ' + (err?.message || err),
+          buttons: ['Aceptar']
+        });
+        await errorAlert.present();
+      }
+    } else {
+      // En navegador web (PC)
+      const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+      const enlace = document.createElement('a');
+      enlace.href = window.URL.createObjectURL(blob);
+      enlace.download = nombreArchivo;
+      enlace.click();
+      window.URL.revokeObjectURL(enlace.href);
+
+      const alert = await this.alertController.create({
+        header: '¡Archivo Guardado!',
+        subHeader: nombreArchivo,
+        message: 'Se descargó el archivo en tu carpeta de Descargas.',
+        buttons: ['Aceptar']
+      });
+      await alert.present();
+    }
   }
 }
