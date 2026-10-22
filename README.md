@@ -60,8 +60,8 @@ Alerta que se muestra al presionar el botón de guardar ruta y confirmación de 
 
 1. Clonar el repositorio:
    ```bash
-   git clone <URL_DEL_REPOSITORIO>
-   cd GPS
+   git clone https://github.com/alexbarba2753/Deber-GPS.git
+   cd Deber-GPS
    ```
 
 2. Instalar las dependencias:
