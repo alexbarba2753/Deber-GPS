@@ -1,20 +1,131 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
+  <ion-toolbar color="primary">
     <ion-title>
-      Blank
+      Deber GPS y Rutas
     </ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
+<ion-content [fullscreen]="true" class="ion-padding">
   <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
+    <ion-toolbar color="primary">
+      <ion-title size="large">Deber GPS y Rutas</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-  </div>
+  <!-- Tarjeta de Estudiantes -->
+  <ion-card class="student-card">
+    <ion-card-header>
+      <div class="header-icon-title">
+        <ion-icon name="people-outline" color="primary"></ion-icon>
+        <ion-card-title>Aplicaciones Móviles</ion-card-title>
+      </div>
+      <ion-card-subtitle>Trabajo Práctico - GPS & Mapas</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content>
+      <p><strong>Integrantes:</strong></p>
+      <ul class="students-list">
+        <li>Mateo Barba</li>
+        <li>Daniel Diaz</li>
+      </ul>
+      <p class="description-text">
+        Aplicación sencilla desarrollada para consultar ubicaciones y rutas en Google Maps y exportar los enlaces a archivos de texto (.txt).
+      </p>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Sección 1: Posición GPS -->
+  <ion-card class="action-card">
+    <ion-card-header>
+      <div class="card-title-group">
+        <ion-icon name="location-outline" color="danger"></ion-icon>
+        <ion-card-title>1. Posición GPS</ion-card-title>
+      </div>
+      <ion-card-subtitle>Ubicación del sitio asignado</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content>
+      <p class="section-desc">
+        Haga clic en el hipervínculo para abrir las coordenadas directamente en Google Maps:
+      </p>
+
+      <div class="link-box">
+        <ion-icon name="open-outline" class="link-icon"></ion-icon>
+        <a [href]="urlUbicacion" target="_blank" rel="noopener noreferrer" class="map-link">
+          Abrir ubicación GPS en Google Maps
+        </a>
+      </div>
+
+      <p class="raw-url">
+        <strong>URL:</strong> <span class="url-text">{{ urlUbicacion }}</span>
+      </p>
+
+      <!-- Botones de Acción -->
+      <div class="button-container">
+        <ion-button expand="block" color="primary" (click)="abrirEnlace(urlUbicacion)">
+          <ion-icon slot="start" name="map-outline"></ion-icon>
+          Abrir en Google Maps
+        </ion-button>
+
+        <ion-button expand="block" color="success" (click)="guardarUbicacionTxt()">
+          <ion-icon slot="start" name="download-outline"></ion-icon>
+          Guardar Ubicación en TXT
+        </ion-button>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Sección 2: Ruta de Interés -->
+  <ion-card class="action-card">
+    <ion-card-header>
+      <div class="card-title-group">
+        <ion-icon name="navigate-outline" color="warning"></ion-icon>
+        <ion-card-title>2. Ruta de Interés</ion-card-title>
+      </div>
+      <ion-card-subtitle>Ruta hacia destino de interés</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content>
+      <p class="section-desc">
+        Haga clic en el hipervínculo para visualizar la ruta trazada en Google Maps:
+      </p>
+
+      <div class="link-box">
+        <ion-icon name="open-outline" class="link-icon"></ion-icon>
+        <a [href]="urlRuta" target="_blank" rel="noopener noreferrer" class="map-link">
+          Abrir ruta en Google Maps
+        </a>
+      </div>
+
+      <p class="raw-url">
+        <strong>URL:</strong> <span class="url-text">{{ urlRuta }}</span>
+      </p>
+
+      <!-- Botones de Acción -->
+      <div class="button-container">
+        <ion-button expand="block" color="warning" (click)="abrirEnlace(urlRuta)">
+          <ion-icon slot="start" name="navigate-outline"></ion-icon>
+          Abrir Ruta en Google Maps
+        </ion-button>
+
+        <ion-button expand="block" color="success" (click)="guardarRutaTxt()">
+          <ion-icon slot="start" name="download-outline"></ion-icon>
+          Guardar Ruta en TXT
+        </ion-button>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Mensaje de estado -->
+  @if (mensajeEstado) {
+    <ion-card class="status-card">
+      <ion-card-content>
+        <div class="status-container">
+          <ion-icon name="checkmark-circle-outline" color="success" class="status-icon"></ion-icon>
+          <div>
+            <strong>Estado:</strong>
+            <p>{{ mensajeEstado }}</p>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  }
 </ion-content>
