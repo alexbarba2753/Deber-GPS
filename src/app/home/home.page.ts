@@ -23,11 +23,18 @@ import {
   openOutline,
   documentTextOutline,
   checkmarkCircleOutline,
-  peopleOutline
+  peopleOutline,
+  shareSocialOutline
 } from 'ionicons/icons';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+interface DownloadPlugin {
+  saveToDownloads(options: { fileName: string; content: string }): Promise<{ success: boolean; path: string }>;
+}
+
+const NativeDownload = registerPlugin<DownloadPlugin>('DownloadPlugin');
 
 @Component({
   selector: 'app-home',
@@ -68,7 +75,8 @@ export class HomePage {
       openOutline,
       documentTextOutline,
       checkmarkCircleOutline,
-      peopleOutline
+      peopleOutline,
+      shareSocialOutline
     });
   }
 
@@ -99,51 +107,67 @@ export class HomePage {
   private async descargarArchivoTxt(nombreArchivo: string, contenido: string) {
     if (Capacitor.isNativePlatform()) {
       try {
-        // En Android (APK nativa), escribimos el archivo en el sistema de archivos del dispositivo
-        const resultado = await Filesystem.writeFile({
-          path: nombreArchivo,
-          data: contenido,
-          directory: Directory.Documents,
-          encoding: Encoding.UTF8
+        // En Android (APK nativa): Guardar directamente en la carpeta pública de Descargas (Downloads)
+        const res = await NativeDownload.saveToDownloads({
+          fileName: nombreArchivo,
+          content: contenido
         });
 
-        console.log('Archivo guardado en:', resultado.uri);
+        console.log('Guardado en descargas:', res);
 
         const alert = await this.alertController.create({
           header: '¡Archivo Guardado!',
           subHeader: nombreArchivo,
-          message: 'El archivo se guardó en el almacenamiento del dispositivo.\n\n¿Deseas guardarlo en Descargas o compartirlo?',
+          message: `El archivo se guardó directamente en tu carpeta de Descargas (Downloads) de tu teléfono.\n\nYa puedes abrir la aplicación "Archivos" o "Descargas" de tu celular para verlo.`,
           buttons: [
             {
-              text: 'Solo Guardar',
+              text: 'Aceptar',
               role: 'cancel'
             },
             {
-              text: 'Guardar en Descargas / Compartir',
+              text: 'Compartir',
               handler: async () => {
                 try {
                   await Share.share({
                     title: nombreArchivo,
                     text: contenido,
-                    url: resultado.uri,
-                    dialogTitle: `Guardar ${nombreArchivo} en Descargas`
+                    dialogTitle: `Compartir ${nombreArchivo}`
                   });
                 } catch (shareErr) {
-                  console.log('Acción cancelada o error al compartir:', shareErr);
+                  console.log('Error o cancelado al compartir:', shareErr);
                 }
               }
             }
           ]
         });
         await alert.present();
+
       } catch (err: any) {
-        console.error('Error al guardar en nativo:', err);
-        const errorAlert = await this.alertController.create({
-          header: 'Error al Guardar',
-          message: 'No se pudo guardar el archivo en el dispositivo: ' + (err?.message || err),
-          buttons: ['Aceptar']
-        });
-        await errorAlert.present();
+        console.error('Error al guardar en Descargas nativo:', err);
+
+        // Fallback por si la versión de Android no permitiera acceso a MediaStore
+        try {
+          const fileRes = await Filesystem.writeFile({
+            path: nombreArchivo,
+            data: contenido,
+            directory: Directory.Documents,
+            encoding: Encoding.UTF8
+          });
+
+          await Share.share({
+            title: nombreArchivo,
+            text: contenido,
+            url: fileRes.uri,
+            dialogTitle: `Guardar o compartir ${nombreArchivo}`
+          });
+        } catch (fallbackErr: any) {
+          const errorAlert = await this.alertController.create({
+            header: 'Error al Guardar',
+            message: 'No se pudo guardar el archivo: ' + (err?.message || err),
+            buttons: ['Aceptar']
+          });
+          await errorAlert.present();
+        }
       }
     } else {
       // En navegador web (PC)
